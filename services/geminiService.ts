@@ -1,7 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 /**
  * Helper to clean base64 string
  */
@@ -23,6 +21,9 @@ export const generateHairstyle = async (
   refImage?: string | null
 ): Promise<string> => {
   try {
+    // Initialize inside the function to avoid load-time crashes if API_KEY is missing in environment
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
     const parts: any[] = [];
 
     // 1. Add User Image
