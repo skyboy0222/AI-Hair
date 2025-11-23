@@ -1,0 +1,7 @@
+{
+  "name": "AI 焕发 - 智能发型设计",
+  "description": "基于 Gemini 2.5 Flash Image 的智能发型设计平台。上传照片，一键生成最适合您的发型。",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
