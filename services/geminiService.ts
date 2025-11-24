@@ -18,22 +18,15 @@ const getMimeType = (base64: string): string => {
 export const generateHairstyle = async (
   userImage: string,
   prompt: string,
-  refImage?: string | null,
-  apiKey?: string
+  refImage?: string | null
 ): Promise<string> => {
   try {
-    // 优先使用传入的 apiKey (用户设置)，其次使用环境变量
-    const keyToUse = apiKey || process.env.API_KEY;
-
-    if (!keyToUse) {
-      throw new Error("API Key 未设置。请点击右上角设置按钮输入您的 API Key。");
-    }
-
-    const ai = new GoogleGenAI({ apiKey: keyToUse });
+    // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const parts: any[] = [];
 
-    // 1. Add User Image
+    // 2. Add User Image
     parts.push({
       inlineData: {
         data: cleanBase64(userImage),
@@ -41,7 +34,7 @@ export const generateHairstyle = async (
       },
     });
 
-    // 2. Add Reference Image if exists
+    // 3. Add Reference Image if exists
     if (refImage) {
       parts.push({
         inlineData: {
@@ -54,8 +47,7 @@ export const generateHairstyle = async (
       });
     }
 
-    // 3. Construct System/User Prompt
-    // We blend the user prompt with a strong system instruction for the model to act as a stylist.
+    // 4. Construct System/User Prompt
     const fullPrompt = `
       You are an expert professional hair stylist and image editor.
       Task: Edit the first image provided.
@@ -69,8 +61,7 @@ export const generateHairstyle = async (
 
     parts.push({ text: fullPrompt });
 
-    // 4. Call Gemini 2.5 Flash Image
-    // Note: The guideline specifies gemini-2.5-flash-image for editing/generation.
+    // 5. Call Gemini 2.5 Flash Image
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -78,8 +69,7 @@ export const generateHairstyle = async (
       },
     });
 
-    // 5. Parse Response
-    // The model returns parts. We look for the image part.
+    // 6. Parse Response
     if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
@@ -92,10 +82,6 @@ export const generateHairstyle = async (
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    // If it's an API Key error, show the specific message
-    if (error.message.includes("API Key")) {
-        throw error;
-    }
-    throw new Error(error.message || "Failed to generate hairstyle.");
+    throw new Error(error.message || "生成失败，请重试。");
   }
 };
