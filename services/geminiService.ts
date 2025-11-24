@@ -21,6 +21,11 @@ export const generateHairstyle = async (
   refImage?: string | null
 ): Promise<string> => {
   try {
+    // Check if API Key is available
+    if (!process.env.API_KEY) {
+      throw new Error("API Key 未配置。请在 Vercel 环境变量中设置 API_KEY。");
+    }
+
     // Initialize inside the function to avoid load-time crashes if API_KEY is missing in environment
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -85,6 +90,10 @@ export const generateHairstyle = async (
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
+    // If it's an API Key error, show the specific message
+    if (error.message.includes("API Key")) {
+        throw error;
+    }
     throw new Error(error.message || "Failed to generate hairstyle.");
   }
 };
