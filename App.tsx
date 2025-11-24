@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Sparkles, Wand2, Scissors, History, Download, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Wand2, Scissors, History, Download, ChevronRight, Settings } from 'lucide-react';
 import ImageUpload from './components/ImageUpload';
 import Button from './components/Button';
+import ApiKeyModal from './components/ApiKeyModal';
 import { generateHairstyle } from './services/geminiService';
 import { DesignMode } from './types';
 
@@ -13,6 +14,15 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<DesignMode>(DesignMode.AUTO);
+  
+  // API Key Management State
+  const [showSettings, setShowSettings] = useState(false);
+  const [savedKey, setSavedKey] = useState('');
+
+  useEffect(() => {
+    const key = localStorage.getItem('gemini_api_key');
+    if (key) setSavedKey(key);
+  }, []);
 
   const handleGenerate = async () => {
     if (!userImage) return;
@@ -29,11 +39,27 @@ function App() {
       const result = await generateHairstyle(userImage, finalPrompt, refImage);
       setGeneratedImage(result);
     } catch (err: any) {
-      const errorMessage = err.message || "生成失败，请重试";
-      setError(errorMessage);
+      console.error(err);
+      if (err.message === 'API_KEY_MISSING') {
+        setError("请配置 API Key 以继续使用");
+        setShowSettings(true);
+      } else if (err.message === 'API_KEY_INVALID') {
+        setError("API Key 无效或已过期，请重新配置");
+        setShowSettings(true);
+      } else {
+        const errorMessage = err.message || "生成失败，请重试";
+        setError(errorMessage);
+      }
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleSaveApiKey = (key: string) => {
+    localStorage.setItem('gemini_api_key', key);
+    setSavedKey(key);
+    setShowSettings(false);
+    setError(null); // Clear error after saving
   };
 
   const downloadImage = () => {
@@ -49,6 +75,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+      <ApiKeyModal 
+        isOpen={showSettings} 
+        onClose={() => setShowSettings(false)} 
+        onSave={handleSaveApiKey}
+        initialKey={savedKey}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -67,6 +100,13 @@ function App() {
               <a href="#" className="hover:text-indigo-600">发型库</a>
               <a href="#" className="hover:text-indigo-600">关于我们</a>
             </nav>
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-colors"
+              title="设置 API Key"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </header>
@@ -192,6 +232,9 @@ function App() {
                     <h4 className="text-lg font-bold text-slate-800 mb-2">生成遇到问题</h4>
                     <p className="text-slate-500 mb-6">{error}</p>
                     <div className="flex flex-col gap-2">
+                       <Button onClick={() => setShowSettings(true)} variant="secondary">
+                         配置 API Key
+                       </Button>
                        <Button onClick={handleGenerate} variant="outline">重试</Button>
                     </div>
                   </div>
