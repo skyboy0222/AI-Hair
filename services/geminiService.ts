@@ -21,12 +21,8 @@ export const generateHairstyle = async (
   refImage?: string | null
 ): Promise<string> => {
   try {
-    // Check if API Key is available
-    if (!process.env.API_KEY) {
-      throw new Error("API Key 未配置。请在 Vercel 环境变量中设置 API_KEY。");
-    }
-
-    // Initialize inside the function to avoid load-time crashes if API_KEY is missing in environment
+    // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+    // Assume this variable is pre-configured, valid, and accessible.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const parts: any[] = [];

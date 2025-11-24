@@ -10,11 +10,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Define `process.env` as an object containing the API_KEY.
-      // This ensures code accessing `process.env.API_KEY` works correctly in the browser.
-      'process.env': {
-        API_KEY: JSON.stringify(process.env.API_KEY || env.API_KEY)
-      },
+      // Safely define specific environment variables without overwriting the whole object.
+      // This is a fallback. The best practice is to use VITE_API_KEY in Vercel.
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY),
     },
   };
 });
