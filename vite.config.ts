@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
       // Define `process.env` as an object containing the API_KEY.
       // This ensures code accessing `process.env.API_KEY` works correctly in the browser.
       'process.env': {
-        API_KEY: process.env.API_KEY || env.API_KEY
+        API_KEY: JSON.stringify(process.env.API_KEY || env.API_KEY)
       },
     },
   };
