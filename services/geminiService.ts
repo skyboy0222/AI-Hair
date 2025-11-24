@@ -21,8 +21,14 @@ export const generateHairstyle = async (
   refImage?: string | null
 ): Promise<string> => {
   try {
+    const apiKey = process.env.API_KEY;
+    
+    if (!apiKey) {
+      throw new Error("未检测到 API Key。请在 Vercel 的 Environment Variables 中添加 'VITE_API_KEY'。");
+    }
+
     // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
 
     const parts: any[] = [];
 
@@ -82,6 +88,7 @@ export const generateHairstyle = async (
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
+    // Pass through our custom error message or generic one
     throw new Error(error.message || "生成失败，请重试。");
   }
 };

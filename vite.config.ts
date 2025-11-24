@@ -7,12 +7,15 @@ export default defineConfig(({ mode }) => {
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, (process as any).cwd(), '');
 
+  // Prioritize VITE_API_KEY (Vercel standard) -> API_KEY -> Process Env fallback
+  const apiKey = env.VITE_API_KEY || env.API_KEY || process.env.VITE_API_KEY || process.env.API_KEY;
+
   return {
     plugins: [react()],
     define: {
-      // Safely define specific environment variables without overwriting the whole object.
-      // This is a fallback. The best practice is to use VITE_API_KEY in Vercel.
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY),
+      // Safely define process.env.API_KEY global for the browser
+      // JSON.stringify is crucial here to turn the value into a string literal
+      'process.env.API_KEY': JSON.stringify(apiKey),
     },
   };
 });
