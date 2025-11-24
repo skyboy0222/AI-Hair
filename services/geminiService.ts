@@ -18,12 +18,18 @@ const getMimeType = (base64: string): string => {
 export const generateHairstyle = async (
   userImage: string,
   prompt: string,
-  refImage?: string | null
+  refImage?: string | null,
+  apiKey?: string
 ): Promise<string> => {
   try {
-    // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-    // Assume this variable is pre-configured, valid, and accessible.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // 优先使用传入的 apiKey (用户设置)，其次使用环境变量
+    const keyToUse = apiKey || process.env.API_KEY;
+
+    if (!keyToUse) {
+      throw new Error("API Key 未设置。请点击右上角设置按钮输入您的 API Key。");
+    }
+
+    const ai = new GoogleGenAI({ apiKey: keyToUse });
 
     const parts: any[] = [];
 

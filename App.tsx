@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Sparkles, Wand2, Scissors, History, Download, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Wand2, Scissors, History, Download, ChevronRight, Settings } from 'lucide-react';
 import ImageUpload from './components/ImageUpload';
 import Button from './components/Button';
+import ApiKeyModal from './components/ApiKeyModal';
 import { generateHairstyle } from './services/geminiService';
 import { DesignMode } from './types';
 
@@ -13,6 +14,25 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<DesignMode>(DesignMode.AUTO);
+  
+  // API Key Management
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKey, setApiKey] = useState<string>('');
+
+  useEffect(() => {
+    const storedKey = localStorage.getItem('gemini_api_key');
+    if (storedKey) setApiKey(storedKey);
+  }, []);
+
+  const handleSaveApiKey = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem('gemini_api_key', key);
+    setShowApiKeyModal(false);
+    // Clear error if it was about API key
+    if (error && (error.includes('API Key') || error.includes('Key'))) {
+      setError(null);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!userImage) return;
@@ -26,10 +46,16 @@ function App() {
         ? "Analyze the face shape and recommend a highly suitable, modern, and attractive hairstyle. The new hairstyle should enhance the person's features." 
         : prompt;
 
-      const result = await generateHairstyle(userImage, finalPrompt, refImage);
+      const result = await generateHairstyle(userImage, finalPrompt, refImage, apiKey);
       setGeneratedImage(result);
     } catch (err: any) {
-      setError(err.message || "生成失败，请重试");
+      const errorMessage = err.message || "生成失败，请重试";
+      setError(errorMessage);
+      
+      // If error is related to API Key, show the modal
+      if (errorMessage.includes("API Key") || errorMessage.includes("Key")) {
+        setShowApiKeyModal(true);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -59,11 +85,23 @@ function App() {
               AI 焕发
             </h1>
           </div>
-          <nav className="hidden md:flex gap-6 text-sm font-medium text-slate-600">
-            <a href="#" className="hover:text-indigo-600">首页</a>
-            <a href="#" className="hover:text-indigo-600">发型库</a>
-            <a href="#" className="hover:text-indigo-600">关于我们</a>
-          </nav>
+          
+          <div className="flex items-center gap-4">
+            <nav className="hidden md:flex gap-6 text-sm font-medium text-slate-600 mr-2">
+              <a href="#" className="hover:text-indigo-600">首页</a>
+              <a href="#" className="hover:text-indigo-600">发型库</a>
+              <a href="#" className="hover:text-indigo-600">关于我们</a>
+            </nav>
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowApiKeyModal(true)} 
+              className={`!p-2 text-slate-500 hover:text-indigo-600 ${!apiKey && 'text-indigo-600 bg-indigo-50'}`}
+              title="配置 API Key"
+            >
+              <Settings className="w-5 h-5" />
+              <span className="hidden md:inline ml-2 text-sm font-medium">设置 Key</span>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -187,7 +225,16 @@ function App() {
                     </div>
                     <h4 className="text-lg font-bold text-slate-800 mb-2">生成遇到问题</h4>
                     <p className="text-slate-500 mb-6">{error}</p>
-                    <Button onClick={handleGenerate} variant="outline">重试</Button>
+                    <div className="flex flex-col gap-2">
+                       {/* If it is an API key error, the retry button will likely trigger the modal anyway via handleGenerate logic, 
+                           but we also add a direct settings button for clarity */}
+                       {(error.includes("API Key") || error.includes("Key")) && (
+                           <Button onClick={() => setShowApiKeyModal(true)} variant="secondary" className="mb-2">
+                             设置 API Key
+                           </Button>
+                       )}
+                       <Button onClick={handleGenerate} variant="outline">重试</Button>
+                    </div>
                   </div>
                 ) : generatedImage ? (
                   <div className="relative w-full h-full flex flex-col">
@@ -250,6 +297,13 @@ function App() {
           
         </div>
       </main>
+
+      <ApiKeyModal 
+        isOpen={showApiKeyModal} 
+        onClose={() => setShowApiKeyModal(false)} 
+        onSave={handleSaveApiKey} 
+        initialKey={apiKey} 
+      />
     </div>
   );
 }
